@@ -146,6 +146,7 @@
       .toggle > button.active {
         outline: 2px solid var(--accent);
         border-color: transparent;
+        box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2) inset;
       }
       table {
         width: 100%;
@@ -230,15 +231,8 @@
         serverTimestamp,
       } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-      // ⬇️ Paste your Firebase Web App config here (public by design)
-      // const firebaseConfig = {
-      //   apiKey: "YOUR_API_KEY",
-      //   authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      //   projectId: "YOUR_PROJECT_ID",
-      //   storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      //   messagingSenderId: "YOUR_SENDER_ID",
-      //   appId: "YOUR_APP_ID",
-      // };
+      // ⬇️ Your Firebase Web App config (public)
+      // const firebaseConfig = { ... };
       const firebaseConfig = {
         apiKey: "AIzaSyDMwvrx1BpwrOAoSOFTNn9XygNNpltomvc",
         authDomain: "gender-reveal-party-game.firebaseapp.com",
@@ -566,7 +560,6 @@
           },
           { merge: true }
         );
-
         await setDoc(
           metaDoc(code),
           { hostPin: pin, bestOf, themeName },
@@ -610,9 +603,7 @@
       }
 
       async function openGame() {
-        if (!state.hostPinSet) {
-          await createOrLoadGame();
-        }
+        if (!state.hostPinSet) await createOrLoadGame();
         await updateDoc(gameDoc(state.gameCode), { status: "open" });
       }
       async function lockGame() {
@@ -634,17 +625,17 @@
         }
 
         const key = {};
+        const keyTB = {};
         $$(".akey").forEach((r) => {
           if (r.checked) key[r.name] = r.value;
         });
-        await setDoc(keyDoc(state.gameCode), key);
-
-        const keyTB = {};
         $$(".akeytb").forEach((r) => {
           if (r.checked) keyTB[r.name] = r.value;
         });
-        await setDoc(keyTBDoc(state.gameCode), keyTB);
-
+        await Promise.all([
+          setDoc(keyDoc(state.gameCode), key),
+          setDoc(keyTBDoc(state.gameCode), keyTB),
+        ]);
         byId("host_status").textContent = "Answer keys saved.";
       }
 
@@ -873,6 +864,8 @@
       }
 
       // ---------- Guest ----------
+      let guestChoiceBound = false;
+
       async function initGuest() {
         byId("guest_gameCode").value = state.gameCode || "";
         byId("btnGuestLoad").addEventListener("click", loadGameForGuest);
@@ -880,6 +873,7 @@
         if (state.gameCode) {
           await loadGameForGuest();
         }
+        bindGuestChoiceClicks(); // ensure click handler is bound exactly once
       }
 
       async function loadGameForGuest() {
@@ -903,16 +897,16 @@
 
         const g = gSnap.data();
         state.status = g.status;
-        setGuestBanner(state.status);
-        applyGuestSubmitState();
         state.coupleA = g.coupleA;
         state.coupleB = g.coupleB;
+
+        setGuestBanner(state.status);
+        applyGuestSubmitState();
 
         if (metaSnap.exists()) {
           const md = metaSnap.data();
           if (md.themeName) applyThemeByName(md.themeName);
         }
-
         if (state.status === "scored") {
           await showWinnerToGuest();
         }
@@ -955,8 +949,12 @@
               idx + 1
             }. ${escapeHtml(q.text)}</div>
             <div class="toggle">
-              <button data-q="${q.id}" data-v="A">${escapeHtml(ab[0])}</button>
-              <button data-q="${q.id}" data-v="B">${escapeHtml(ab[1])}</button>
+              <button type="button" data-q="${q.id}" data-v="A">${escapeHtml(
+            ab[0]
+          )}</button>
+              <button type="button" data-q="${q.id}" data-v="B">${escapeHtml(
+            ab[1]
+          )}</button>
             </div>`;
           wrap.appendChild(block);
         });
@@ -977,33 +975,36 @@
                 idx + 1
               }. ${escapeHtml(q.text)}</div>
               <div class="toggle">
-                <button data-tb="${q.id}" data-v="A">${escapeHtml(
+                <button type="button" data-tb="${q.id}" data-v="A">${escapeHtml(
               ab[0]
             )}</button>
-                <button data-tb="${q.id}" data-v="B">${escapeHtml(
+                <button type="button" data-tb="${q.id}" data-v="B">${escapeHtml(
               ab[1]
             )}</button>
               </div>`;
             wrap.appendChild(block);
           });
         }
+      }
 
-        wrap.addEventListener(
-          "click",
-          (e) => {
-            const btn = e.target.closest("button[data-q],button[data-tb]");
-            if (!btn) return;
-            const qid =
-              btn.getAttribute("data-q") || btn.getAttribute("data-tb");
-            const isTB = btn.hasAttribute("data-tb");
-            const val = btn.getAttribute("data-v");
-            (isTB ? state.tbAnswers : state.answers)[qid] = val;
-            const parent = btn.parentElement;
-            $$("button", parent).forEach((b) => b.classList.remove("active"));
-            btn.classList.add("active");
-          },
-          false
-        ); // attach once per render
+      function bindGuestChoiceClicks() {
+        if (guestChoiceBound) return;
+        guestChoiceBound = true;
+        const wrap = byId("guest_questions");
+        wrap.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-q],button[data-tb]");
+          if (!btn) return;
+          const qid = btn.getAttribute("data-q") || btn.getAttribute("data-tb");
+          const isTB = btn.hasAttribute("data-tb");
+          const val = btn.getAttribute("data-v");
+          (isTB ? state.tbAnswers : state.answers)[qid] = val;
+          // toggle active in this choice row
+          const parent = btn.parentElement;
+          parent
+            .querySelectorAll("button")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+        });
       }
 
       async function submitGuestAnswers() {
