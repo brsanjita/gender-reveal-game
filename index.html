@@ -1002,7 +1002,7 @@
             $$("button", parent).forEach((b) => b.classList.remove("active"));
             btn.classList.add("active");
           },
-          { once: true }
+          false
         ); // attach once per render
       }
 
