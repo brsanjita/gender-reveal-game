@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gender Reveal Game</title>
+    <!-- Favicon (prevents 404) -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27><text y=%2750%25%27 x=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-size=%2742%27>👶</text></svg>"
+    />
+    <style>
+      :root {
+        --bg: #0f172a;
+        --card: #111827;
+        --muted: #94a3b8;
+        --accent: #22d3ee;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial;
+        background: linear-gradient(120deg, #0f172a, #1e293b 35%, #0b1324);
+        color: #e5e7eb;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      h1 {
+        font-size: clamp(24px, 4vw, 36px);
+        margin: 10px 0;
+      }
+      h2 {
+        font-size: 20px;
+        margin: 16px 0 8px;
+      }
+      p {
+        color: var(--muted);
+      }
+      .card {
+        background: rgba(17, 24, 39, 0.75);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      @media (min-width: 920px) {
+        .grid-2 {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      input[type="text"],
+      input[type="number"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #0b1220;
+        color: #e5e7eb;
+      }
+      input::placeholder {
+        color: #667085;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .btn {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: #0b1220;
+        color: #e5e7eb;
+        padding: 10px 14px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn:hover {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2) inset;
+      }
+      .btn.primary {
+        background: linear-gradient(90deg, #06b6d4, #3b82f6);
+        border: none;
+      }
+      .btn.good {
+        background: linear-gradient(90deg, #16a34a, #22c55e);
+        border: none;
+      }
+      .btn.warn {
+        background: linear-gradient(90deg, #f59e0b, #f97316);
+        border: none;
+      }
+      .btn.bad {
+        background: linear-gradient(90deg, #ef4444, #f43f5e);
+        border: none;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        opacity: 0.9;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .toggle > button {
+        flex: 1;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #0b1220;
+        color: #e5e7eb;
+        cursor: pointer;
+      }
+      .toggle > button.active {
+        outline: 2px solid var(--accent);
+        border-color: transparent;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 14px;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      th {
+        background: rgba(255, 255, 255, 0.06);
+        font-weight: 700;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .qr {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 160px;
+        background: #0b1220;
+        border-radius: 12px;
+        border: 1px dashed rgba(255, 255, 255, 0.18);
+      }
+      .kbd {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        background: #0b1220;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+      .notice {
+        border-left: 4px solid var(--accent);
+        padding: 10px 12px;
+        background: rgba(34, 211, 238, 0.1);
+        border-radius: 8px;
+      }
+      .divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 14px 0;
+      }
+      .chip {
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        font-size: 12px;
+      }
+      #winnerCard {
+        background: linear-gradient(
+          135deg,
+          var(--accent),
+          rgba(255, 255, 255, 0.08)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.16);
+      }
+    </style>
+
+    <!-- QR & html2canvas helpers -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <!-- Firebase (CDN ESM) -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+      import {
+        initializeFirestore,
+        doc,
+        setDoc,
+        getDoc,
+        updateDoc,
+        collection,
+        addDoc,
+        getDocs,
+        onSnapshot,
+        serverTimestamp,
+      } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+      // ⬇️ Paste your Firebase Web App config here (public by design)
+      //   const firebaseConfig = {
+      //     apiKey: "YOUR_API_KEY",
+      //     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      //     projectId: "YOUR_PROJECT_ID",
+      //     storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      //     messagingSenderId: "YOUR_SENDER_ID",
+      //     appId: "YOUR_APP_ID",
+      //   };
+      const firebaseConfig = {
+        apiKey: "AIzaSyDMwvrx1BpwrOAoSOFTNn9XygNNpltomvc",
+        authDomain: "gender-reveal-party-game.firebaseapp.com",
+        projectId: "gender-reveal-party-game",
+        storageBucket: "gender-reveal-party-game.firebasestorage.app",
+        messagingSenderId: "147706529240",
+        appId: "1:147706529240:web:0dae02ed8d584108b21ead",
+      };
+
+      // App + Firestore (with network-friendly fallback)
+      const app = initializeApp(firebaseConfig);
+      const db = initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true,
+        useFetchStreams: false,
+      });
+
+      // ---------- tiny DOM helpers ----------
+      const $ = (s, r = document) => r.querySelector(s);
+      const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+      const byId = (id) => document.getElementById(id);
+      const uid = () => Math.random().toString(36).slice(2, 10);
+
+      const url = new URL(location.href);
+      const mode = (url.searchParams.get("mode") || "guest").toLowerCase();
+      const gameCodeParam = (url.searchParams.get("game") || "").trim();
+
+      const DEFAULT_QUESTIONS = [
+        { id: "q1", text: "Who is the funnier parent?" },
+        { id: "q2", text: "Who is the stricter parent?" },
+        { id: "q3", text: "Who is more likely to be late?" },
+        { id: "q4", text: "Who will change more diapers?" },
+        { id: "q5", text: "Who picked the baby name?" },
+      ];
+      const DEFAULT_TB = [
+        { id: "t1", text: "Who will wake up first for 3am feeds?" },
+        { id: "t2", text: "Who buys more baby outfits?" },
+        { id: "t3", text: "Who will cry first at the reveal?" },
+      ];
+      const THEMES = [
+        {
+          name: "Classic (Teal/Blue)",
+          vars: {
+            "--bg": "#0f172a",
+            "--card": "#111827",
+            "--muted": "#94a3b8",
+            "--accent": "#22d3ee",
+            "--ok": "#22c55e",
+            "--warn": "#f59e0b",
+            "--bad": "#ef4444",
+          },
+        },
+        {
+          name: "Pink & Blue",
+          vars: {
+            "--bg": "#1b0b1a",
+            "--card": "#2a1631",
+            "--muted": "#f5c6d3",
+            "--accent": "#f472b6",
+            "--ok": "#60a5fa",
+            "--warn": "#fb7185",
+            "--bad": "#ef4444",
+          },
+        },
+        {
+          name: "Sage & Gold",
+          vars: {
+            "--bg": "#0d1b16",
+            "--card": "#10231b",
+            "--muted": "#b6d0c2",
+            "--accent": "#a3e635",
+            "--ok": "#22c55e",
+            "--warn": "#eab308",
+            "--bad": "#ef4444",
+          },
+        },
+        {
+          name: "Lavender & Sky",
+          vars: {
+            "--bg": "#0d1026",
+            "--card": "#171a36",
+            "--muted": "#cbd5ff",
+            "--accent": "#a78bfa",
+            "--ok": "#60a5fa",
+            "--warn": "#f59e0b",
+            "--bad": "#ef4444",
+          },
+        },
+        {
+          name: "Sunset",
+          vars: {
+            "--bg": "#1a0f1a",
+            "--card": "#261326",
+            "--muted": "#ffd1a6",
+            "--accent": "#fb923c",
+            "--ok": "#f59e0b",
+            "--warn": "#ef4444",
+            "--bad": "#7e22ce",
+          },
+        },
+      ];
+
+      const state = {
+        gameCode: gameCodeParam,
+        coupleA: "Parent A",
+        coupleB: "Parent B",
+        hostPin: "",
+        hostPinSet: false,
+        questions: DEFAULT_QUESTIONS,
+        tbQuestions: DEFAULT_TB,
+        bestOf: 1,
+        themeName: THEMES[0].name,
+        status: "setup",
+        answers: {},
+        tbAnswers: {},
+        winners: [],
+        topScore: 0,
+        unsub: null,
+      };
+
+      // Firestore paths
+      const gameDoc = (code) => doc(db, "games", code);
+      const questionsCol = (code) => collection(db, "games", code, "questions");
+      const tiebreakersCol = (code) =>
+        collection(db, "games", code, "tiebreakers");
+      const responsesCol = (code) => collection(db, "games", code, "responses");
+      const metaDoc = (code) => doc(db, "games", code, "meta", "config");
+      const keyDoc = (code) => doc(db, "games", code, "meta", "answerKey");
+      const keyTBDoc = (code) => doc(db, "games", code, "meta", "answerKeyTB");
+
+      // Mount
+      window.addEventListener("DOMContentLoaded", () => {
+        const guestView = byId("guestView");
+        const hostView = byId("hostView");
+        if (mode === "host") {
+          hostView.style.display = "block";
+          initHost();
+        } else {
+          guestView.style.display = "block";
+          initGuest();
+        }
+      });
+
+      function applyThemeByName(name) {
+        const t = THEMES.find((x) => x.name === name) || THEMES[0];
+        for (const [k, v] of Object.entries(t.vars))
+          document.documentElement.style.setProperty(k, v);
+        state.themeName = t.name;
+      }
+
+      // ---------- Host ----------
+      async function initHost() {
+        if (state.gameCode === "") state.gameCode = "baby-" + uid();
+        byId("host_gameCode").value = state.gameCode;
+        byId("host_parentA").value = state.coupleA;
+        byId("host_parentB").value = state.coupleB;
+        byId("host_bestOf").value = state.bestOf;
+
+        const sel = byId("host_theme");
+        sel.innerHTML = "";
+        THEMES.forEach((t) => {
+          const o = document.createElement("option");
+          o.value = t.name;
+          o.textContent = t.name;
+          sel.appendChild(o);
+        });
+        sel.value = state.themeName;
+        sel.addEventListener("change", () => applyThemeByName(sel.value));
+        applyThemeByName(state.themeName);
+
+        renderHostQuestionsEditor();
+        renderHostTBEditor();
+
+        byId("btnCreateGame").addEventListener("click", createOrLoadGame);
+        byId("btnShowQR").addEventListener("click", showQR);
+        byId("btnOpenGame").addEventListener("click", openGame);
+        byId("btnLock").addEventListener("click", lockGame);
+        byId("btnSaveAnswerKey").addEventListener("click", saveAnswerKey);
+        byId("btnScore").addEventListener("click", scoreGame);
+        byId("btnExport").addEventListener("click", exportCSV);
+        byId("btnSaveTheme").addEventListener("click", async () => {
+          await updateDoc(metaDoc(state.gameCode), {
+            themeName: byId("host_theme").value,
+          });
+          applyThemeByName(byId("host_theme").value);
+        });
+        byId("btnSaveBestOf").addEventListener("click", async () => {
+          const x = Math.max(1, parseInt(byId("host_bestOf").value || "1", 10));
+          state.bestOf = x;
+          await updateDoc(metaDoc(state.gameCode), { bestOf: x });
+        });
+        byId("btnShareCard").addEventListener("click", shareWinnerCard);
+        byId("btnSaveCard").addEventListener("click", downloadWinnerCard);
+
+        setupHostLive();
+      }
+
+      function renderHostQuestionsEditor() {
+        const wrap = byId("host_questions");
+        wrap.innerHTML = "";
+        state.questions.forEach((q, idx) => {
+          const row = document.createElement("div");
+          row.className = "card";
+          row.innerHTML = `
+          <div class="row" style="justify-content:space-between;align-items:center;gap:12px;">
+            <div style="flex:1">
+              <label>Question ${idx + 1}</label>
+              <input data-qid="${
+                q.id
+              }" class="qtext" type="text" value="${q.text.replace(
+            /"/g,
+            "&quot;"
+          )}"/>
+            </div>
+            <button class="btn bad" data-del="${q.id}">Remove</button>
+          </div>`;
+          wrap.appendChild(row);
+        });
+        const add = document.createElement("button");
+        add.className = "btn";
+        add.textContent = "+ Add question";
+        add.addEventListener("click", () => {
+          state.questions.push({ id: uid(), text: "New question…" });
+          renderHostQuestionsEditor();
+        });
+        wrap.appendChild(add);
+
+        wrap.addEventListener("click", (e) => {
+          const del = e.target.closest("[data-del]");
+          if (!del) return;
+          const id = del.getAttribute("data-del");
+          state.questions = state.questions.filter((x) => x.id !== id);
+          renderHostQuestionsEditor();
+        });
+        wrap.addEventListener("input", (e) => {
+          if (!e.target.classList.contains("qtext")) return;
+          const id = e.target.getAttribute("data-qid");
+          const q = state.questions.find((x) => x.id === id);
+          if (q) q.text = e.target.value;
+        });
+      }
+
+      function renderHostTBEditor() {
+        const wrap = byId("host_tb");
+        wrap.innerHTML = "";
+        state.tbQuestions.forEach((q, idx) => {
+          const row = document.createElement("div");
+          row.className = "card";
+          row.innerHTML = `
+          <div class="row" style="justify-content:space-between;align-items:center;gap:12px;">
+            <div style="flex:1">
+              <label>Tiebreaker ${idx + 1}</label>
+              <input data-qid="${
+                q.id
+              }" class="tbqtext" type="text" value="${q.text.replace(
+            /"/g,
+            "&quot;"
+          )}"/>
+            </div>
+            <button class="btn bad" data-deltb="${q.id}">Remove</button>
+          </div>`;
+          wrap.appendChild(row);
+        });
+        const add = document.createElement("button");
+        add.className = "btn";
+        add.textContent = "+ Add tiebreaker";
+        add.addEventListener("click", () => {
+          state.tbQuestions.push({ id: uid(), text: "New tiebreaker…" });
+          renderHostTBEditor();
+        });
+        wrap.appendChild(add);
+
+        wrap.addEventListener("click", (e) => {
+          const del = e.target.closest("[data-deltb]");
+          if (!del) return;
+          const id = del.getAttribute("data-deltb");
+          state.tbQuestions = state.tbQuestions.filter((x) => x.id !== id);
+          renderHostTBEditor();
+        });
+        wrap.addEventListener("input", (e) => {
+          if (!e.target.classList.contains("tbqtext")) return;
+          const id = e.target.getAttribute("data-qid");
+          const q = state.tbQuestions.find((x) => x.id === id);
+          if (q) q.text = e.target.value;
+        });
+      }
+
+      async function createOrLoadGame() {
+        const code = byId("host_gameCode").value.trim();
+        const a = byId("host_parentA").value.trim() || "Parent A";
+        const b = byId("host_parentB").value.trim() || "Parent B";
+        const pin = byId("host_pin").value.trim() || "1234";
+        const bestOf = Math.max(
+          1,
+          parseInt(byId("host_bestOf").value || "1", 10)
+        );
+        const themeName = byId("host_theme").value;
+
+        Object.assign(state, {
+          gameCode: code,
+          coupleA: a,
+          coupleB: b,
+          hostPin: pin,
+          hostPinSet: true,
+          bestOf,
+          themeName,
+        });
+
+        await setDoc(
+          gameDoc(code),
+          {
+            code,
+            coupleA: a,
+            coupleB: b,
+            status: "setup",
+            createdAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+        await setDoc(
+          metaDoc(code),
+          { hostPin: pin, bestOf, themeName },
+          { merge: true }
+        );
+
+        for (const q of state.questions)
+          await setDoc(doc(questionsCol(code), q.id), {
+            id: q.id,
+            text: q.text,
+          });
+        for (const q of state.tbQuestions)
+          await setDoc(doc(tiebreakersCol(code), q.id), {
+            id: q.id,
+            text: q.text,
+          });
+
+        byId("host_status").textContent =
+          "Game saved. You can OPEN it when ready.";
+        const guestUrl = `${location.origin}${
+          location.pathname
+        }?game=${encodeURIComponent(code)}&mode=guest`;
+        byId("guest_join_link").href = guestUrl;
+        byId("guest_join_link").textContent = guestUrl;
+        const hostUrl = `${location.origin}${
+          location.pathname
+        }?game=${encodeURIComponent(code)}&mode=host`;
+        byId("host_link").href = hostUrl;
+        byId("host_link").textContent = hostUrl;
+      }
+
+      function showQR() {
+        const code = byId("host_gameCode").value.trim();
+        const guestUrl = `${location.origin}${
+          location.pathname
+        }?game=${encodeURIComponent(code)}&mode=guest`;
+        const node = byId("qrBox");
+        node.innerHTML = "";
+        new window.QRCode(node, { text: guestUrl, width: 180, height: 180 });
+        byId("qr_caption").textContent = guestUrl;
+      }
+
+      async function openGame() {
+        if (!state.hostPinSet) {
+          await createOrLoadGame();
+        }
+        await updateDoc(gameDoc(state.gameCode), { status: "open" });
+      }
+      async function lockGame() {
+        const pin = byId("host_pin").value.trim();
+        const meta = await getDoc(metaDoc(state.gameCode));
+        if (!meta.exists() || meta.data().hostPin !== pin) {
+          alert("Wrong PIN");
+          return;
+        }
+        await updateDoc(gameDoc(state.gameCode), { status: "locked" });
+      }
+
+      async function saveAnswerKey() {
+        const pin = byId("host_pin").value.trim();
+        const meta = await getDoc(metaDoc(state.gameCode));
+        if (!meta.exists() || meta.data().hostPin !== pin) {
+          alert("Wrong PIN");
+          return;
+        }
+
+        const key = {};
+        $$(".akey").forEach((r) => {
+          if (r.checked) key[r.name] = r.value;
+        });
+        await setDoc(keyDoc(state.gameCode), key);
+        const keyTB = {};
+        $$(".akeytb").forEach((r) => {
+          if (r.checked) keyTB[r.name] = r.value;
+        });
+        await setDoc(keyTBDoc(state.gameCode), keyTB);
+        byId("host_status").textContent = "Answer keys saved.";
+      }
+
+      async function scoreGame() {
+        const [gSnap, keySnap, keyTBSnap, qSnap, tSnap, rSnap, metaSnap] =
+          await Promise.all([
+            getDoc(gameDoc(state.gameCode)),
+            getDoc(keyDoc(state.gameCode)),
+            getDoc(keyTBDoc(state.gameCode)),
+            getDocs(questionsCol(state.gameCode)),
+            getDocs(tiebreakersCol(state.gameCode)),
+            getDocs(responsesCol(state.gameCode)),
+            getDoc(metaDoc(state.gameCode)),
+          ]);
+        const key = keySnap.exists() ? keySnap.data() : {};
+        const keyTB = keyTBSnap.exists() ? keyTBSnap.data() : {};
+        const questions = qSnap.docs.map((d) => d.data());
+        const tQuestions = tSnap.docs.map((d) => d.data());
+        const responses = rSnap.docs.map((d) => d.data());
+        const bestOf = metaSnap.exists()
+          ? metaSnap.data().bestOf || 1
+          : state.bestOf;
+
+        const scores = new Map();
+        for (const resp of responses) {
+          let score = 0;
+          for (const q of questions) {
+            const a = (resp.answers || {})[q.id];
+            if (a && key[q.id] && a === key[q.id]) score++;
+          }
+          scores.set(resp.name, (scores.get(resp.name) || 0) + score);
+        }
+
+        const baseBoard = Array.from(scores.entries())
+          .map(([name, score]) => ({ name, score }))
+          .sort((x, y) => y.score - x.score);
+        let topScore = baseBoard.length ? baseBoard[0].score : 0;
+        let tied = baseBoard
+          .filter((r) => r.score === topScore)
+          .map((r) => r.name);
+
+        state.winners = [];
+        state.topScore = topScore;
+        if (tied.length > 1 && tQuestions.length) {
+          const useTB = tQuestions.slice(
+            0,
+            Math.min(bestOf, tQuestions.length)
+          );
+          const tbScores = new Map();
+          for (const resp of responses.filter((r) => tied.includes(r.name))) {
+            let s = 0;
+            for (const q of useTB) {
+              const a = (resp.answersTB || {})[q.id];
+              if (a && keyTB[q.id] && a === keyTB[q.id]) s++;
+            }
+            tbScores.set(resp.name, s);
+          }
+          const tbBoard = Array.from(tbScores.entries())
+            .map(([name, score]) => ({ name, score }))
+            .sort((x, y) => y.score - x.score);
+          if (tbBoard.length) {
+            const tbTop = tbBoard[0].score;
+            const tbWinners = tbBoard
+              .filter((r) => r.score === tbTop)
+              .map((r) => r.name);
+            state.winners = tbWinners;
+          }
+        } else if (tied.length) {
+          state.winners = tied;
+        }
+
+        renderLeaderboard(baseBoard, state.winners);
+        renderWinnerCard(state.winners, state.topScore);
+        await updateDoc(gameDoc(state.gameCode), { status: "scored" });
+      }
+
+      function renderLeaderboard(items, winners = []) {
+        const tbody = byId("leader_tbody");
+        tbody.innerHTML = "";
+        items.forEach((row, idx) => {
+          const isWinner = winners.includes(row.name);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>#${idx + 1}</td><td>${escapeHtml(row.name)}${
+            isWinner ? " 🏆" : ""
+          }</td><td><b>${row.score}</b></td>`;
+          tbody.appendChild(tr);
+        });
+        byId("winnerActions").style.display = winners.length ? "block" : "none";
+      }
+
+      function renderAnswerKeyEditor(questions, key, targetWrapId, radioClass) {
+        const wrap = byId(targetWrapId);
+        wrap.innerHTML = "";
+        questions.forEach((q) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+          <div style="margin-bottom:8px;font-weight:600">${escapeHtml(
+            q.text
+          )}</div>
+          <div class="toggle">
+            <label style="flex:1"><input type="radio" class="${radioClass}" name="${
+            q.id
+          }" value="A" ${key[q.id] === "A" ? "checked" : ""}/> <b>${escapeHtml(
+            state.coupleA
+          )}</b></label>
+            <label style="flex:1"><input type="radio" class="${radioClass}" name="${
+            q.id
+          }" value="B" ${key[q.id] === "B" ? "checked" : ""}/> <b>${escapeHtml(
+            state.coupleB
+          )}</b></label>
+          </div>`;
+          wrap.appendChild(card);
+        });
+      }
+
+      async function exportCSV() {
+        const [qSnap, rSnap, keySnap] = await Promise.all([
+          getDocs(questionsCol(state.gameCode)),
+          getDocs(responsesCol(state.gameCode)),
+          getDoc(keyDoc(state.gameCode)),
+        ]);
+        const questions = qSnap.docs.map((d) => d.data());
+        const responses = rSnap.docs.map((d) => d.data());
+        const key = keySnap.exists() ? keySnap.data() : {};
+        const headers = ["Name", ...questions.map((q) => q.text), "Score"];
+        const rows = [headers];
+        for (const resp of responses) {
+          let score = 0;
+          const ans = questions.map((q) => {
+            const a = (resp.answers || {})[q.id] || "";
+            if (key[q.id] && a === key[q.id]) score++;
+            return a;
+          });
+          rows.push([resp.name, ...ans, String(score)]);
+        }
+        const csv = rows.map((r) => r.map(csvEscape).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const u = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = u;
+        a.download = `${state.gameCode}_results.csv`;
+        a.click();
+        URL.revokeObjectURL(u);
+      }
+
+      function setupHostLive() {
+        const codeInput = byId("host_gameCode");
+        codeInput.addEventListener("change", async () => {
+          state.gameCode = codeInput.value.trim();
+          await refreshHostMeta();
+        });
+        refreshHostMeta();
+      }
+
+      async function refreshHostMeta() {
+        if (!state.gameCode) return;
+        const [gSnap, qSnap, tbSnap, keySnap, keyTBSnap, metaSnap] =
+          await Promise.all([
+            getDoc(gameDoc(state.gameCode)),
+            getDocs(questionsCol(state.gameCode)),
+            getDocs(tiebreakersCol(state.gameCode)),
+            getDoc(keyDoc(state.gameCode)),
+            getDoc(keyTBDoc(state.gameCode)),
+            getDoc(metaDoc(state.gameCode)),
+          ]);
+        if (gSnap.exists()) {
+          const g = gSnap.data();
+          state.status = g.status;
+          state.coupleA = g.coupleA;
+          state.coupleB = g.coupleB;
+          byId(
+            "host_status"
+          ).innerHTML = `Status: <span class="chip">${g.status.toUpperCase()}</span>`;
+          byId("host_parentA").value = state.coupleA;
+          byId("host_parentB").value = state.coupleB;
+          const guestUrl = `${location.origin}${
+            location.pathname
+          }?game=${encodeURIComponent(state.gameCode)}&mode=guest`;
+          byId("guest_join_link").href = guestUrl;
+          byId("guest_join_link").textContent = guestUrl;
+          const hostUrl = `${location.origin}${
+            location.pathname
+          }?game=${encodeURIComponent(state.gameCode)}&mode=host`;
+          byId("host_link").href = hostUrl;
+          byId("host_link").textContent = hostUrl;
+        }
+        if (!qSnap.empty) {
+          state.questions = qSnap.docs.map((d) => d.data());
+          renderHostQuestionsEditor();
+        }
+        if (!tbSnap.empty) {
+          state.tbQuestions = tbSnap.docs.map((d) => d.data());
+          renderHostTBEditor();
+        }
+
+        const key = keySnap.exists() ? keySnap.data() : {};
+        const keyTB = keyTBSnap.exists() ? keyTBSnap.data() : {};
+        renderAnswerKeyEditor(state.questions, key, "answerKey", "akey");
+        renderAnswerKeyEditor(
+          state.tbQuestions,
+          keyTB,
+          "answerKeyTB",
+          "akeytb"
+        );
+
+        if (metaSnap.exists()) {
+          const md = metaSnap.data();
+          if (md.themeName) {
+            byId("host_theme").value = md.themeName;
+            applyThemeByName(md.themeName);
+          }
+          if (md.bestOf) {
+            state.bestOf = md.bestOf;
+            byId("host_bestOf").value = md.bestOf;
+          }
+        }
+      }
+
+      // ---------- Guest ----------
+      async function initGuest() {
+        byId("guest_gameCode").value = state.gameCode || "";
+        byId("btnGuestLoad").addEventListener("click", loadGameForGuest);
+        byId("btnSubmitAnswers").addEventListener("click", submitGuestAnswers);
+        if (state.gameCode) {
+          await loadGameForGuest();
+        }
+      }
+
+      async function loadGameForGuest() {
+        const code = byId("guest_gameCode").value.trim();
+        if (!code) {
+          alert("Enter a game code");
+          return;
+        }
+        state.gameCode = code;
+
+        const [gSnap, qSnap, tbSnap, metaSnap] = await Promise.all([
+          getDoc(gameDoc(code)),
+          getDocs(questionsCol(code)),
+          getDocs(tiebreakersCol(code)),
+          getDoc(metaDoc(code)),
+        ]);
+        if (!gSnap.exists()) {
+          alert("Game not found yet. Ask host to create/open.");
+          return;
+        }
+        const g = gSnap.data();
+        state.status = g.status;
+        state.coupleA = g.coupleA;
+        state.coupleB = g.coupleB;
+
+        if (metaSnap.exists()) {
+          const md = metaSnap.data();
+          if (md.themeName) applyThemeByName(md.themeName);
+        }
+
+        byId(
+          "guest_header"
+        ).innerHTML = `<div class="pill">Game: <b class="kbd">${code}</b></div> <div class="pill">Status: <b>${g.status.toUpperCase()}</b></div>`;
+        state.questions = qSnap.docs.map((d) => d.data());
+        state.tbQuestions = tbSnap.docs.map((d) => d.data());
+
+        renderGuestQuestionForm();
+
+        if (state.unsub) state.unsub();
+        state.unsub = onSnapshot(gameDoc(code), (docSnap) => {
+          if (docSnap.exists()) {
+            const gd = docSnap.data();
+            state.status = gd.status;
+            byId(
+              "guest_header"
+            ).innerHTML = `<div class="pill">Game: <b class="kbd">${code}</b></div> <div class="pill">Status: <b>${gd.status.toUpperCase()}</b></div>`;
+            byId("btnSubmitAnswers").disabled = gd.status !== "open";
+          }
+        });
+      }
+
+      function renderGuestQuestionForm() {
+        const wrap = byId("guest_questions");
+        wrap.innerHTML = "";
+        const ab = [state.coupleA, state.coupleB];
+        state.questions.forEach((q, idx) => {
+          const block = document.createElement("div");
+          block.className = "card";
+          block.innerHTML = `
+          <div style="font-weight:700;margin-bottom:8px;">Q${
+            idx + 1
+          }. ${escapeHtml(q.text)}</div>
+          <div class="toggle">
+            <button data-q="${q.id}" data-v="A">${escapeHtml(ab[0])}</button>
+            <button data-q="${q.id}" data-v="B">${escapeHtml(ab[1])}</button>
+          </div>`;
+          wrap.appendChild(block);
+        });
+
+        if (state.tbQuestions.length) {
+          const sep = document.createElement("div");
+          sep.className = "divider";
+          wrap.appendChild(sep);
+          const tbTitle = document.createElement("div");
+          tbTitle.innerHTML =
+            "<h2>Optional Tiebreakers (answer now, used only if tie)</h2>";
+          wrap.appendChild(tbTitle);
+          state.tbQuestions.forEach((q, idx) => {
+            const block = document.createElement("div");
+            block.className = "card";
+            block.innerHTML = `
+            <div style="font-weight:700;margin-bottom:8px;">TB${
+              idx + 1
+            }. ${escapeHtml(q.text)}</div>
+            <div class="toggle">
+              <button data-tb="${q.id}" data-v="A">${escapeHtml(ab[0])}</button>
+              <button data-tb="${q.id}" data-v="B">${escapeHtml(ab[1])}</button>
+            </div>`;
+            wrap.appendChild(block);
+          });
+        }
+
+        wrap.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-q],button[data-tb]");
+          if (!btn) return;
+          const qid = btn.getAttribute("data-q") || btn.getAttribute("data-tb");
+          const isTB = btn.hasAttribute("data-tb");
+          const val = btn.getAttribute("data-v");
+          (isTB ? state.tbAnswers : state.answers)[qid] = val;
+          const parent = btn.parentElement;
+          $$("button", parent).forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+        });
+      }
+
+      async function submitGuestAnswers() {
+        if (state.status !== "open") {
+          alert("Submissions are closed.");
+          return;
+        }
+        const name = byId("guest_name").value.trim();
+        if (!name) {
+          alert("Please enter your name");
+          return;
+        }
+        for (const q of state.questions) {
+          if (!state.answers[q.id]) {
+            if (!confirm("Some answers are blank. Submit anyway?")) return;
+            break;
+          }
+        }
+        await addDoc(responsesCol(state.gameCode), {
+          name,
+          answers: state.answers,
+          answersTB: state.tbAnswers,
+          submittedAt: serverTimestamp(),
+        });
+        byId("submit_status").textContent =
+          "Submitted! You can edit and re-submit until the host locks.";
+      }
+
+      // Winner card
+      function renderWinnerCard(winners, score) {
+        const names = winners && winners.length ? winners.join(" & ") : "TBD";
+        const el = byId("winnerCard");
+        el.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;padding:32px;text-align:center;">
+          <div style="font-size:14px;opacity:.8;">Gender Reveal Game</div>
+          <div style="font-size:40px;font-weight:800;margin-top:6px;">🏆 ${escapeHtml(
+            names
+          )}</div>
+          <div style="font-size:16px;margin-top:6px;">Winner${
+            winners.length > 1 ? "s" : ""
+          } — Score: <b>${score}</b></div>
+          <div style="margin-top:10px;font-size:14px;opacity:.85;">${escapeHtml(
+            state.coupleA
+          )} &amp; ${escapeHtml(
+          state.coupleB
+        )} • Game <span class="kbd">${escapeHtml(state.gameCode)}</span></div>
+          <div style="margin-top:12px;font-size:12px;opacity:.75;">${new Date().toLocaleString()}</div>
+        </div>`;
+      }
+      async function downloadWinnerCard() {
+        const node = byId("winnerCard");
+        const canvas = await html2canvas(node, {
+          backgroundColor: null,
+          scale: 2,
+        });
+        const url = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${state.gameCode}_winner.png`;
+        a.click();
+      }
+      async function shareWinnerCard() {
+        const node = byId("winnerCard");
+        const canvas = await html2canvas(node, {
+          backgroundColor: null,
+          scale: 2,
+        });
+        if (navigator.canShare && window.DataTransfer) {
+          canvas.toBlob(async (blob) => {
+            try {
+              const file = new File([blob], `${state.gameCode}_winner.png`, {
+                type: "image/png",
+              });
+              if (navigator.canShare({ files: [file] }))
+                await navigator.share({
+                  files: [file],
+                  title: "Winner!",
+                  text: "Party winner card 🎉",
+                });
+              else downloadWinnerCard();
+            } catch (e) {
+              downloadWinnerCard();
+            }
+          });
+        } else downloadWinnerCard();
+      }
+
+      // Utils
+      function escapeHtml(s) {
+        return (s || "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#039;",
+            }[c])
+        );
+      }
+      function csvEscape(x) {
+        const s = String(x ?? "");
+        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      }
+
+      // expose some functions used by buttons (optional—kept local above)
+      window.downloadWinnerCard = downloadWinnerCard;
+      window.shareWinnerCard = shareWinnerCard;
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card" style="margin-bottom: 16px">
+        <h1>👶 Gender Reveal Party Game</h1>
+        <p class="muted">
+          Host & Guests in one page. Host sets up a game + QR, guests answer
+          couple questions, then we lock, enter answer keys, auto-score with
+          Best-of-X tiebreakers, and share a Winner Card 🎉
+        </p>
+        <div class="row">
+          <span class="pill"
+            >Open as
+            <a href="?mode=host" style="color: #7dd3fc; font-weight: 700"
+              >Host</a
+            >
+            or
+            <a href="?mode=guest" style="color: #7dd3fc; font-weight: 700"
+              >Guest</a
+            >
+          </span>
+        </div>
+      </div>
+
+      <!-- HOST VIEW -->
+      <div id="hostView" style="display: none">
+        <div class="grid grid-2">
+          <div class="card">
+            <h2>1) Create or Load a Game</h2>
+            <div class="grid">
+              <div>
+                <label>Game code</label
+                ><input id="host_gameCode" placeholder="e.g. baby-june" />
+              </div>
+              <div class="grid grid-2">
+                <div>
+                  <label>Parent A (name)</label
+                  ><input id="host_parentA" placeholder="e.g. Alex" />
+                </div>
+                <div>
+                  <label>Parent B (name)</label
+                  ><input id="host_parentB" placeholder="e.g. Sam" />
+                </div>
+              </div>
+              <div>
+                <label>Host PIN</label
+                ><input
+                  id="host_pin"
+                  type="password"
+                  placeholder="set a short PIN"
+                />
+              </div>
+              <div class="row">
+                <button id="btnCreateGame" class="btn primary">Save Game</button
+                ><span id="host_status" class="muted"></span>
+              </div>
+              <div class="notice">
+                Links:
+                <div>
+                  Guest link: <a id="guest_join_link" target="_blank"></a>
+                </div>
+                <div>Host link: <a id="host_link" target="_blank"></a></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>2) Theme & QR</h2>
+            <div class="row">
+              <div style="flex: 1">
+                <label>Theme</label
+                ><select id="host_theme"></select>
+              </div>
+              <div>
+                <label>&nbsp;</label
+                ><button id="btnSaveTheme" class="btn">Apply Theme</button>
+              </div>
+            </div>
+            <div class="qr" id="qrBox" style="margin-top: 10px">
+              QR shows here
+            </div>
+            <div
+              class="muted"
+              id="qr_caption"
+              style="margin-top: 8px; word-break: break-all"
+            ></div>
+            <div class="row" style="margin-top: 10px">
+              <button id="btnShowQR" class="btn">Generate QR</button>
+              <button id="btnOpenGame" class="btn good">
+                Open for Answers
+              </button>
+              <button id="btnLock" class="btn warn">Lock Submissions</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px">
+          <h2>3) Edit Questions</h2>
+          <p class="muted">
+            Tip: finalize before opening. Changing after people answer can
+            confuse scoring.
+          </p>
+          <div id="host_questions" class="grid"></div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top: 16px">
+          <div class="card">
+            <h2>4) Tiebreakers (Best-of-X)</h2>
+            <div class="row">
+              <div style="max-width: 220px">
+                <label>Best of</label
+                ><input id="host_bestOf" type="number" min="1" value="1" />
+              </div>
+              <div>
+                <label>&nbsp;</label
+                ><button id="btnSaveBestOf" class="btn">Save Best-of</button>
+              </div>
+            </div>
+            <div id="host_tb" class="grid" style="margin-top: 10px"></div>
+          </div>
+
+          <div class="card">
+            <h2>5) Enter Answer Keys</h2>
+            <p class="muted">
+              First lock submissions, then pick the couple’s answers.
+            </p>
+            <h3 style="margin: 8px 0 4px">Main Answers</h3>
+            <div id="answerKey" class="grid"></div>
+            <h3 style="margin: 14px 0 4px">Tiebreakers</h3>
+            <div id="answerKeyTB" class="grid"></div>
+            <div class="row" style="margin-top: 10px">
+              <button id="btnSaveAnswerKey" class="btn">
+                Save Answer Keys
+              </button>
+              <button id="btnScore" class="btn primary">
+                Score & Show Leaderboard
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top: 16px">
+          <div class="card">
+            <h2>Leaderboard</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody id="leader_tbody"></tbody>
+            </table>
+            <div class="row" style="margin-top: 10px">
+              <button id="btnExport" class="btn">Export CSV</button>
+            </div>
+            <div
+              id="winnerActions"
+              class="row"
+              style="display: none; margin-top: 10px"
+            >
+              <button
+                id="btnSaveCard"
+                class="btn"
+                onclick="downloadWinnerCard()"
+              >
+                Save Winner Card (PNG)
+              </button>
+              <button
+                id="btnShareCard"
+                class="btn primary"
+                onclick="shareWinnerCard()"
+              >
+                Share Winner Card
+              </button>
+            </div>
+          </div>
+          <div class="card" id="winnerCard">
+            <div style="opacity: 0.7">
+              Winner card will appear after scoring
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GUEST VIEW -->
+      <div id="guestView" style="display: none">
+        <div class="card">
+          <h2>Join Game</h2>
+          <div class="grid grid-2">
+            <div>
+              <label>Your name</label
+              ><input id="guest_name" placeholder="e.g. Priya R." />
+            </div>
+            <div>
+              <label>Game code</label
+              ><input id="guest_gameCode" placeholder="e.g. baby-june" />
+            </div>
+          </div>
+          <div class="row" style="margin-top: 10px">
+            <button id="btnGuestLoad" class="btn">Load</button>
+            <div id="guest_header" class="row" style="gap: 8px"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 16px">
+          <h2>Questions</h2>
+          <div id="guest_questions" class="grid"></div>
+          <div class="row" style="margin-top: 10px">
+            <button id="btnSubmitAnswers" class="btn primary">
+              Submit / Update Answers
+            </button>
+            <span id="submit_status" class="muted"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <p class="muted">
+        Tip: In GitHub, use <span class="kbd">Settings → Pages</span> to publish
+        this site, then show the QR from the Host tab.
+      </p>
+    </div>
+  </body>
+</html>
