@@ -231,14 +231,14 @@
       } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
       // ⬇️ Paste your Firebase Web App config here (public by design)
-      //   const firebaseConfig = {
-      //     apiKey: "YOUR_API_KEY",
-      //     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      //     projectId: "YOUR_PROJECT_ID",
-      //     storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      //     messagingSenderId: "YOUR_SENDER_ID",
-      //     appId: "YOUR_APP_ID",
-      //   };
+      // const firebaseConfig = {
+      //   apiKey: "YOUR_API_KEY",
+      //   authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      //   projectId: "YOUR_PROJECT_ID",
+      //   storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      //   messagingSenderId: "YOUR_SENDER_ID",
+      //   appId: "YOUR_APP_ID",
+      // };
       const firebaseConfig = {
         apiKey: "AIzaSyDMwvrx1BpwrOAoSOFTNn9XygNNpltomvc",
         authDomain: "gender-reveal-party-game.firebaseapp.com",
@@ -389,6 +389,9 @@
       }
 
       // ---------- Host ----------
+      let hostQuestionsBound = false;
+      let hostTBBound = false;
+
       async function initHost() {
         if (state.gameCode === "") state.gameCode = "baby-" + uid();
         byId("host_gameCode").value = state.gameCode;
@@ -429,8 +432,42 @@
           state.bestOf = x;
           await updateDoc(metaDoc(state.gameCode), { bestOf: x });
         });
-        byId("btnShareCard").addEventListener("click", shareWinnerCard);
-        byId("btnSaveCard").addEventListener("click", downloadWinnerCard);
+
+        // One-time delegated listeners for editors
+        const qWrap = byId("host_questions");
+        if (!hostQuestionsBound) {
+          qWrap.addEventListener("click", (e) => {
+            const del = e.target.closest("[data-del]");
+            if (!del) return;
+            const id = del.getAttribute("data-del");
+            state.questions = state.questions.filter((x) => x.id !== id);
+            renderHostQuestionsEditor();
+          });
+          qWrap.addEventListener("input", (e) => {
+            if (!e.target.classList.contains("qtext")) return;
+            const id = e.target.getAttribute("data-qid");
+            const q = state.questions.find((x) => x.id === id);
+            if (q) q.text = e.target.value;
+          });
+          hostQuestionsBound = true;
+        }
+        const tbWrap = byId("host_tb");
+        if (!hostTBBound) {
+          tbWrap.addEventListener("click", (e) => {
+            const del = e.target.closest("[data-deltb]");
+            if (!del) return;
+            const id = del.getAttribute("data-deltb");
+            state.tbQuestions = state.tbQuestions.filter((x) => x.id !== id);
+            renderHostTBEditor();
+          });
+          tbWrap.addEventListener("input", (e) => {
+            if (!e.target.classList.contains("tbqtext")) return;
+            const id = e.target.getAttribute("data-qid");
+            const q = state.tbQuestions.find((x) => x.id === id);
+            if (q) q.text = e.target.value;
+          });
+          hostTBBound = true;
+        }
 
         setupHostLive();
       }
@@ -442,18 +479,18 @@
           const row = document.createElement("div");
           row.className = "card";
           row.innerHTML = `
-          <div class="row" style="justify-content:space-between;align-items:center;gap:12px;">
-            <div style="flex:1">
-              <label>Question ${idx + 1}</label>
-              <input data-qid="${
-                q.id
-              }" class="qtext" type="text" value="${q.text.replace(
+            <div class="row" style="justify-content:space-between;align-items:center;gap:12px;">
+              <div style="flex:1">
+                <label>Question ${idx + 1}</label>
+                <input data-qid="${
+                  q.id
+                }" class="qtext" type="text" value="${q.text.replace(
             /"/g,
             "&quot;"
           )}"/>
-            </div>
-            <button class="btn bad" data-del="${q.id}">Remove</button>
-          </div>`;
+              </div>
+              <button class="btn bad" data-del="${q.id}">Remove</button>
+            </div>`;
           wrap.appendChild(row);
         });
         const add = document.createElement("button");
@@ -464,20 +501,6 @@
           renderHostQuestionsEditor();
         });
         wrap.appendChild(add);
-
-        wrap.addEventListener("click", (e) => {
-          const del = e.target.closest("[data-del]");
-          if (!del) return;
-          const id = del.getAttribute("data-del");
-          state.questions = state.questions.filter((x) => x.id !== id);
-          renderHostQuestionsEditor();
-        });
-        wrap.addEventListener("input", (e) => {
-          if (!e.target.classList.contains("qtext")) return;
-          const id = e.target.getAttribute("data-qid");
-          const q = state.questions.find((x) => x.id === id);
-          if (q) q.text = e.target.value;
-        });
       }
 
       function renderHostTBEditor() {
@@ -487,18 +510,18 @@
           const row = document.createElement("div");
           row.className = "card";
           row.innerHTML = `
-          <div class="row" style="justify-content:space-between;align-items:center;gap:12px;">
-            <div style="flex:1">
-              <label>Tiebreaker ${idx + 1}</label>
-              <input data-qid="${
-                q.id
-              }" class="tbqtext" type="text" value="${q.text.replace(
+            <div class="row" style="justify-content:space-between;align-items:center;gap:12px;">
+              <div style="flex:1">
+                <label>Tiebreaker ${idx + 1}</label>
+                <input data-qid="${
+                  q.id
+                }" class="tbqtext" type="text" value="${q.text.replace(
             /"/g,
             "&quot;"
           )}"/>
-            </div>
-            <button class="btn bad" data-deltb="${q.id}">Remove</button>
-          </div>`;
+              </div>
+              <button class="btn bad" data-deltb="${q.id}">Remove</button>
+            </div>`;
           wrap.appendChild(row);
         });
         const add = document.createElement("button");
@@ -509,20 +532,6 @@
           renderHostTBEditor();
         });
         wrap.appendChild(add);
-
-        wrap.addEventListener("click", (e) => {
-          const del = e.target.closest("[data-deltb]");
-          if (!del) return;
-          const id = del.getAttribute("data-deltb");
-          state.tbQuestions = state.tbQuestions.filter((x) => x.id !== id);
-          renderHostTBEditor();
-        });
-        wrap.addEventListener("input", (e) => {
-          if (!e.target.classList.contains("tbqtext")) return;
-          const id = e.target.getAttribute("data-qid");
-          const q = state.tbQuestions.find((x) => x.id === id);
-          if (q) q.text = e.target.value;
-        });
       }
 
       async function createOrLoadGame() {
@@ -557,6 +566,7 @@
           },
           { merge: true }
         );
+
         await setDoc(
           metaDoc(code),
           { hostPin: pin, bestOf, themeName },
@@ -628,11 +638,13 @@
           if (r.checked) key[r.name] = r.value;
         });
         await setDoc(keyDoc(state.gameCode), key);
+
         const keyTB = {};
         $$(".akeytb").forEach((r) => {
           if (r.checked) keyTB[r.name] = r.value;
         });
         await setDoc(keyTBDoc(state.gameCode), keyTB);
+
         byId("host_status").textContent = "Answer keys saved.";
       }
 
@@ -658,24 +670,23 @@
 
         const scores = new Map();
         for (const resp of responses) {
-          let score = 0;
+          let s = 0;
           for (const q of questions) {
             const a = (resp.answers || {})[q.id];
-            if (a && key[q.id] && a === key[q.id]) score++;
+            if (a && key[q.id] && a === key[q.id]) s++;
           }
-          scores.set(resp.name, (scores.get(resp.name) || 0) + score);
+          scores.set(resp.name, (scores.get(resp.name) || 0) + s);
         }
 
-        const baseBoard = Array.from(scores.entries())
+        const board = Array.from(scores.entries())
           .map(([name, score]) => ({ name, score }))
           .sort((x, y) => y.score - x.score);
-        let topScore = baseBoard.length ? baseBoard[0].score : 0;
-        let tied = baseBoard
-          .filter((r) => r.score === topScore)
-          .map((r) => r.name);
+        let topScore = board.length ? board[0].score : 0;
+        let tied = board.filter((r) => r.score === topScore).map((r) => r.name);
 
         state.winners = [];
         state.topScore = topScore;
+
         if (tied.length > 1 && tQuestions.length) {
           const useTB = tQuestions.slice(
             0,
@@ -704,9 +715,17 @@
           state.winners = tied;
         }
 
-        renderLeaderboard(baseBoard, state.winners);
+        renderLeaderboard(board, state.winners);
         renderWinnerCard(state.winners, state.topScore);
-        await updateDoc(gameDoc(state.gameCode), { status: "scored" });
+
+        await Promise.all([
+          updateDoc(gameDoc(state.gameCode), { status: "scored" }),
+          updateDoc(metaDoc(state.gameCode), {
+            winners: state.winners,
+            topScore: state.topScore,
+            scoredAt: serverTimestamp(),
+          }),
+        ]);
       }
 
       function renderLeaderboard(items, winners = []) {
@@ -730,21 +749,21 @@
           const card = document.createElement("div");
           card.className = "card";
           card.innerHTML = `
-          <div style="margin-bottom:8px;font-weight:600">${escapeHtml(
-            q.text
-          )}</div>
-          <div class="toggle">
-            <label style="flex:1"><input type="radio" class="${radioClass}" name="${
+            <div style="margin-bottom:8px;font-weight:600">${escapeHtml(
+              q.text
+            )}</div>
+            <div class="toggle">
+              <label style="flex:1"><input type="radio" class="${radioClass}" name="${
             q.id
           }" value="A" ${key[q.id] === "A" ? "checked" : ""}/> <b>${escapeHtml(
             state.coupleA
           )}</b></label>
-            <label style="flex:1"><input type="radio" class="${radioClass}" name="${
+              <label style="flex:1"><input type="radio" class="${radioClass}" name="${
             q.id
           }" value="B" ${key[q.id] === "B" ? "checked" : ""}/> <b>${escapeHtml(
             state.coupleB
           )}</b></label>
-          </div>`;
+            </div>`;
           wrap.appendChild(card);
         });
       }
@@ -758,6 +777,7 @@
         const questions = qSnap.docs.map((d) => d.data());
         const responses = rSnap.docs.map((d) => d.data());
         const key = keySnap.exists() ? keySnap.data() : {};
+
         const headers = ["Name", ...questions.map((q) => q.text), "Score"];
         const rows = [headers];
         for (const resp of responses) {
@@ -880,14 +900,21 @@
           alert("Game not found yet. Ask host to create/open.");
           return;
         }
+
         const g = gSnap.data();
         state.status = g.status;
+        setGuestBanner(state.status);
+        applyGuestSubmitState();
         state.coupleA = g.coupleA;
         state.coupleB = g.coupleB;
 
         if (metaSnap.exists()) {
           const md = metaSnap.data();
           if (md.themeName) applyThemeByName(md.themeName);
+        }
+
+        if (state.status === "scored") {
+          await showWinnerToGuest();
         }
 
         byId(
@@ -900,14 +927,18 @@
 
         if (state.unsub) state.unsub();
         state.unsub = onSnapshot(gameDoc(code), (docSnap) => {
-          if (docSnap.exists()) {
-            const gd = docSnap.data();
-            state.status = gd.status;
-            byId(
-              "guest_header"
-            ).innerHTML = `<div class="pill">Game: <b class="kbd">${code}</b></div> <div class="pill">Status: <b>${gd.status.toUpperCase()}</b></div>`;
-            byId("btnSubmitAnswers").disabled = gd.status !== "open";
+          if (!docSnap.exists()) return;
+          const gd = docSnap.data();
+          state.status = gd.status;
+          setGuestBanner(state.status);
+          applyGuestSubmitState();
+          if (state.status === "scored") {
+            showWinnerToGuest();
           }
+          byId(
+            "guest_header"
+          ).innerHTML = `<div class="pill">Game: <b class="kbd">${code}</b></div> <div class="pill">Status: <b>${gd.status.toUpperCase()}</b></div>`;
+          byId("btnSubmitAnswers").disabled = gd.status !== "open";
         });
       }
 
@@ -915,17 +946,18 @@
         const wrap = byId("guest_questions");
         wrap.innerHTML = "";
         const ab = [state.coupleA, state.coupleB];
+
         state.questions.forEach((q, idx) => {
           const block = document.createElement("div");
           block.className = "card";
           block.innerHTML = `
-          <div style="font-weight:700;margin-bottom:8px;">Q${
-            idx + 1
-          }. ${escapeHtml(q.text)}</div>
-          <div class="toggle">
-            <button data-q="${q.id}" data-v="A">${escapeHtml(ab[0])}</button>
-            <button data-q="${q.id}" data-v="B">${escapeHtml(ab[1])}</button>
-          </div>`;
+            <div style="font-weight:700;margin-bottom:8px;">Q${
+              idx + 1
+            }. ${escapeHtml(q.text)}</div>
+            <div class="toggle">
+              <button data-q="${q.id}" data-v="A">${escapeHtml(ab[0])}</button>
+              <button data-q="${q.id}" data-v="B">${escapeHtml(ab[1])}</button>
+            </div>`;
           wrap.appendChild(block);
         });
 
@@ -941,28 +973,37 @@
             const block = document.createElement("div");
             block.className = "card";
             block.innerHTML = `
-            <div style="font-weight:700;margin-bottom:8px;">TB${
-              idx + 1
-            }. ${escapeHtml(q.text)}</div>
-            <div class="toggle">
-              <button data-tb="${q.id}" data-v="A">${escapeHtml(ab[0])}</button>
-              <button data-tb="${q.id}" data-v="B">${escapeHtml(ab[1])}</button>
-            </div>`;
+              <div style="font-weight:700;margin-bottom:8px;">TB${
+                idx + 1
+              }. ${escapeHtml(q.text)}</div>
+              <div class="toggle">
+                <button data-tb="${q.id}" data-v="A">${escapeHtml(
+              ab[0]
+            )}</button>
+                <button data-tb="${q.id}" data-v="B">${escapeHtml(
+              ab[1]
+            )}</button>
+              </div>`;
             wrap.appendChild(block);
           });
         }
 
-        wrap.addEventListener("click", (e) => {
-          const btn = e.target.closest("button[data-q],button[data-tb]");
-          if (!btn) return;
-          const qid = btn.getAttribute("data-q") || btn.getAttribute("data-tb");
-          const isTB = btn.hasAttribute("data-tb");
-          const val = btn.getAttribute("data-v");
-          (isTB ? state.tbAnswers : state.answers)[qid] = val;
-          const parent = btn.parentElement;
-          $$("button", parent).forEach((b) => b.classList.remove("active"));
-          btn.classList.add("active");
-        });
+        wrap.addEventListener(
+          "click",
+          (e) => {
+            const btn = e.target.closest("button[data-q],button[data-tb]");
+            if (!btn) return;
+            const qid =
+              btn.getAttribute("data-q") || btn.getAttribute("data-tb");
+            const isTB = btn.hasAttribute("data-tb");
+            const val = btn.getAttribute("data-v");
+            (isTB ? state.tbAnswers : state.answers)[qid] = val;
+            const parent = btn.parentElement;
+            $$("button", parent).forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+          },
+          { once: true }
+        ); // attach once per render
       }
 
       async function submitGuestAnswers() {
@@ -991,29 +1032,32 @@
           "Submitted! You can edit and re-submit until the host locks.";
       }
 
-      // Winner card
-      function renderWinnerCard(winners, score) {
+      // Winner card (host + guest)
+      function renderWinnerCard(winners, score, targetId = "winnerCard") {
         const names = winners && winners.length ? winners.join(" & ") : "TBD";
-        const el = byId("winnerCard");
+        const el = document.getElementById(targetId);
+        if (!el) return;
         el.innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;padding:32px;text-align:center;">
-          <div style="font-size:14px;opacity:.8;">Gender Reveal Game</div>
-          <div style="font-size:40px;font-weight:800;margin-top:6px;">🏆 ${escapeHtml(
-            names
-          )}</div>
-          <div style="font-size:16px;margin-top:6px;">Winner${
-            winners.length > 1 ? "s" : ""
-          } — Score: <b>${score}</b></div>
-          <div style="margin-top:10px;font-size:14px;opacity:.85;">${escapeHtml(
-            state.coupleA
-          )} &amp; ${escapeHtml(
+          <div style="display:flex; flex-direction:column; align-items:center; padding:32px; text-align:center;">
+            <div style="font-size:14px; opacity:.8;">Gender Reveal Game</div>
+            <div style="font-size:40px; font-weight:800; margin-top:6px;">🏆 ${escapeHtml(
+              names
+            )}</div>
+            <div style="font-size:16px; margin-top:6px;">Winner${
+              winners.length > 1 ? "s" : ""
+            } — Score: <b>${score}</b></div>
+            <div style="margin-top:10px; font-size:14px; opacity:.85;">${escapeHtml(
+              state.coupleA
+            )} &amp; ${escapeHtml(
           state.coupleB
         )} • Game <span class="kbd">${escapeHtml(state.gameCode)}</span></div>
-          <div style="margin-top:12px;font-size:12px;opacity:.75;">${new Date().toLocaleString()}</div>
-        </div>`;
+            <div style="margin-top:12px; font-size:12px; opacity:.75;">${new Date().toLocaleString()}</div>
+          </div>`;
       }
-      async function downloadWinnerCard() {
-        const node = byId("winnerCard");
+
+      async function downloadWinnerCard(targetId = "winnerCard") {
+        const node = document.getElementById(targetId);
+        if (!node) return;
         const canvas = await html2canvas(node, {
           backgroundColor: null,
           scale: 2,
@@ -1024,8 +1068,10 @@
         a.download = `${state.gameCode}_winner.png`;
         a.click();
       }
-      async function shareWinnerCard() {
-        const node = byId("winnerCard");
+
+      async function shareWinnerCard(targetId = "winnerCard") {
+        const node = document.getElementById(targetId);
+        if (!node) return;
         const canvas = await html2canvas(node, {
           backgroundColor: null,
           scale: 2,
@@ -1036,18 +1082,58 @@
               const file = new File([blob], `${state.gameCode}_winner.png`, {
                 type: "image/png",
               });
-              if (navigator.canShare({ files: [file] }))
+              if (navigator.canShare({ files: [file] })) {
                 await navigator.share({
                   files: [file],
                   title: "Winner!",
                   text: "Party winner card 🎉",
                 });
-              else downloadWinnerCard();
-            } catch (e) {
-              downloadWinnerCard();
+              } else {
+                downloadWinnerCard(targetId);
+              }
+            } catch {
+              downloadWinnerCard(targetId);
             }
           });
-        } else downloadWinnerCard();
+        } else {
+          downloadWinnerCard(targetId);
+        }
+      }
+
+      function setGuestBanner(status) {
+        const banner = byId("guest_statusBanner");
+        if (!banner) return;
+        if (status === "open") {
+          banner.style.display = "block";
+          banner.innerHTML =
+            "✅ The game is <b>OPEN</b>. Submit or update your answers anytime until the host locks.";
+        } else if (status === "locked") {
+          banner.style.display = "block";
+          banner.innerHTML =
+            "🔒 Submissions are <b>LOCKED</b> by the host. Please wait while the couple answers and we score!";
+        } else if (status === "scored") {
+          banner.style.display = "block";
+          banner.innerHTML =
+            "🎉 The game is <b>SCORED</b>! See the winner below.";
+        } else {
+          banner.style.display = "none";
+          banner.innerHTML = "";
+        }
+      }
+
+      async function showWinnerToGuest() {
+        const meta = await getDoc(metaDoc(state.gameCode));
+        if (meta.exists()) {
+          const md = meta.data();
+          if (Array.isArray(md.winners) && md.winners.length) {
+            byId("guestWinnerSection").style.display = "block";
+            renderWinnerCard(md.winners, md.topScore ?? 0, "guest_winnerCard");
+          }
+        }
+      }
+
+      function applyGuestSubmitState() {
+        byId("btnSubmitAnswers").disabled = state.status !== "open";
       }
 
       // Utils
@@ -1070,7 +1156,7 @@
         return s;
       }
 
-      // expose some functions used by buttons (optional—kept local above)
+      // expose to buttons
       window.downloadWinnerCard = downloadWinnerCard;
       window.shareWinnerCard = shareWinnerCard;
     </script>
@@ -1085,8 +1171,8 @@
           Best-of-X tiebreakers, and share a Winner Card 🎉
         </p>
         <div class="row">
-          <span class="pill"
-            >Open as
+          <span class="pill">
+            Open as
             <a href="?mode=host" style="color: #7dd3fc; font-weight: 700"
               >Host</a
             >
@@ -1105,30 +1191,32 @@
             <h2>1) Create or Load a Game</h2>
             <div class="grid">
               <div>
-                <label>Game code</label
-                ><input id="host_gameCode" placeholder="e.g. baby-june" />
+                <label>Game code</label>
+                <input id="host_gameCode" placeholder="e.g. baby-june" />
               </div>
               <div class="grid grid-2">
                 <div>
-                  <label>Parent A (name)</label
-                  ><input id="host_parentA" placeholder="e.g. Alex" />
+                  <label>Parent A (name)</label>
+                  <input id="host_parentA" placeholder="e.g. Alex" />
                 </div>
                 <div>
-                  <label>Parent B (name)</label
-                  ><input id="host_parentB" placeholder="e.g. Sam" />
+                  <label>Parent B (name)</label>
+                  <input id="host_parentB" placeholder="e.g. Sam" />
                 </div>
               </div>
               <div>
-                <label>Host PIN</label
-                ><input
+                <label>Host PIN</label>
+                <input
                   id="host_pin"
                   type="password"
                   placeholder="set a short PIN"
                 />
               </div>
               <div class="row">
-                <button id="btnCreateGame" class="btn primary">Save Game</button
-                ><span id="host_status" class="muted"></span>
+                <button id="btnCreateGame" class="btn primary">
+                  Save Game
+                </button>
+                <span id="host_status" class="muted"></span>
               </div>
               <div class="notice">
                 Links:
@@ -1144,12 +1232,12 @@
             <h2>2) Theme & QR</h2>
             <div class="row">
               <div style="flex: 1">
-                <label>Theme</label
-                ><select id="host_theme"></select>
+                <label>Theme</label>
+                <select id="host_theme"></select>
               </div>
               <div>
-                <label>&nbsp;</label
-                ><button id="btnSaveTheme" class="btn">Apply Theme</button>
+                <label>&nbsp;</label>
+                <button id="btnSaveTheme" class="btn">Apply Theme</button>
               </div>
             </div>
             <div class="qr" id="qrBox" style="margin-top: 10px">
@@ -1184,12 +1272,12 @@
             <h2>4) Tiebreakers (Best-of-X)</h2>
             <div class="row">
               <div style="max-width: 220px">
-                <label>Best of</label
-                ><input id="host_bestOf" type="number" min="1" value="1" />
+                <label>Best of</label>
+                <input id="host_bestOf" type="number" min="1" value="1" />
               </div>
               <div>
-                <label>&nbsp;</label
-                ><button id="btnSaveBestOf" class="btn">Save Best-of</button>
+                <label>&nbsp;</label>
+                <button id="btnSaveBestOf" class="btn">Save Best-of</button>
               </div>
             </div>
             <div id="host_tb" class="grid" style="margin-top: 10px"></div>
@@ -1266,12 +1354,12 @@
           <h2>Join Game</h2>
           <div class="grid grid-2">
             <div>
-              <label>Your name</label
-              ><input id="guest_name" placeholder="e.g. Priya R." />
+              <label>Your name</label>
+              <input id="guest_name" placeholder="e.g. Priya R." />
             </div>
             <div>
-              <label>Game code</label
-              ><input id="guest_gameCode" placeholder="e.g. baby-june" />
+              <label>Game code</label>
+              <input id="guest_gameCode" placeholder="e.g. baby-june" />
             </div>
           </div>
           <div class="row" style="margin-top: 10px">
@@ -1279,6 +1367,13 @@
             <div id="guest_header" class="row" style="gap: 8px"></div>
           </div>
         </div>
+
+        <!-- Status banner for guests -->
+        <div
+          id="guest_statusBanner"
+          class="notice"
+          style="display: none; margin-top: 12px"
+        ></div>
 
         <div class="card" style="margin-top: 16px">
           <h2>Questions</h2>
@@ -1288,6 +1383,26 @@
               Submit / Update Answers
             </button>
             <span id="submit_status" class="muted"></span>
+          </div>
+        </div>
+
+        <!-- Winner section visible to guests after scoring -->
+        <div
+          class="card"
+          id="guestWinnerSection"
+          style="display: none; margin-top: 16px"
+        >
+          <h2>Winner</h2>
+          <div id="guest_winnerCard">
+            <div class="muted">Waiting for scoring…</div>
+          </div>
+          <div class="row" style="margin-top: 10px">
+            <button
+              class="btn"
+              onclick="downloadWinnerCard('guest_winnerCard')"
+            >
+              Save Winner Card (PNG)
+            </button>
           </div>
         </div>
       </div>
